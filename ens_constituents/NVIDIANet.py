@@ -35,7 +35,7 @@ class NVIDIANet(EnsembleConstituent):
             images (list): List of PIL images.
         """
         with torch.no_grad():
-            images = torch.cat(self.transform_(images))
+            images = torch.cat([self.transform_(img).unsqueeze(0) for img in images], dim=0)
             output = self.model_(images)
             
         return output

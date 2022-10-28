@@ -1,3 +1,4 @@
 ensemble_models/*.npy
 ensemble_models/*.csv
 constituent_models/
+test/
