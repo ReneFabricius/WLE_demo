@@ -2,6 +2,9 @@ import torch
 from PIL import Image
 from typing import List
 import os
+import numpy as np
+import os
+import json
 
 from weensembles.WeightedLinearEnsemble import WeightedLinearEnsemble as WLE
 
@@ -9,6 +12,7 @@ from ens_constituents.NVIDIANet import NVIDIANet
 
 CONSTITUENTS_FOLDER = "constituent_models"
 ENS_MODELS_FOLDER = "ensemble_models"
+CLASS_NAMES = "LOC_synset_mapping.json"
 
 class WLEDemo:
     """
@@ -44,5 +48,23 @@ class WLEDemo:
         wle_outputs, wle_unc = wle.predict_proba(const_outputs, coupling_method=coupling_method)
         
         return const_outputs_dict, wle_outputs
+    
+    
+    
+    def get_top_predictions(self, image_paths: List[str], combining_method: str="logreg_torch", coupling_method: str="m2", constituents: List[str]=None, n=5):
+        constit_outputs, ens_output = self.predict(image_paths=image_paths, combining_method=combining_method, coupling_method=coupling_method, constituents=constituents)
+        class_names = np.array(json.load(open(CLASS_NAMES, "r")))
+        
+        def top_preds(pred: torch.tensor):
+            top_preds = torch.topk(pred, k=n, dim=-1)
+            sampls = pred.shape[0]
+            ret = [["{}: {}".format(class_names[top_preds.indices[sid, i]], top_preds.values[sid, i]) for i in range(n)] for sid in range(sampls)]
+            return ret
+
+        constit_top_outputs = {constit: top_preds(pred=constit_outputs[constit]) for constit in constit_outputs}
+        ens_top_outputs = top_preds(pred=ens_output)
+        
+        return constit_top_outputs, ens_top_outputs
+
         
         
